@@ -1,6 +1,12 @@
+// external imports
 const express = require('express');
 const mongoose = require('mongoose');
 require('dotenv').config();
+
+// internal imports
+const userHandler = require('./routeHandlers/userHandler');
+const conversationHandler = require('./routeHandlers/conversationHandler');
+const messageHandler = require('./routeHandlers/messageHandler');
 
 const app = express();
 
@@ -12,9 +18,9 @@ mongoose
 	})
 	.catch((err) => console.log(err));
 
-app.get('/', (req, res) => {
-	console.log('working');
-});
+app.use('/user', userHandler);
+app.use('/conversation', conversationHandler);
+app.use('/message', messageHandler);
 
 app.listen(process.env.PORT, () => {
 	console.log(`Server is running at port: ${process.env.PORT}`);
