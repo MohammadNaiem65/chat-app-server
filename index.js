@@ -8,7 +8,6 @@ require('dotenv').config();
 const userHandler = require('./routeHandlers/userHandler');
 const conversationHandler = require('./routeHandlers/conversationHandler');
 const messageHandler = require('./routeHandlers/messageHandler');
-const cookieParser = require('cookie-parser');
 
 const app = express();
 
