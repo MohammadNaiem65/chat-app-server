@@ -10,8 +10,25 @@ async function createUser(req, res) {
 	user.password = hashedPassword;
 
 	const newUser = new User(user);
-	const result = await newUser.save();
+	try {
+		const result = await newUser.save();
+		res.send(result);
+	} catch (err) {
+		res.status(500).json({
+			errors: {
+				common: {
+					msg: 'Unknown error occurred',
+				},
+			},
+		});
+	}
+}
+
+async function removeUser(req, res) {
+	const id = req.params.id;
+	const result = await User.findByIdAndDelete(id);
+
 	res.send(result);
 }
 
-module.exports = { createUser };
+module.exports = { createUser, removeUser };
