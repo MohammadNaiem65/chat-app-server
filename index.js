@@ -1,5 +1,6 @@
 // external imports
 const express = require('express');
+const cors = require('cors');
 const mongoose = require('mongoose');
 const admin = require('firebase-admin');
 const cookieParser = require('cookie-parser');
@@ -19,6 +20,7 @@ admin.initializeApp({
 });
 
 const app = express();
+app.use(cors());
 
 // connect to server
 mongoose

@@ -1,27 +1,40 @@
 // external dependencies
+const admin = require('firebase-admin');
 const bcrypt = require('bcrypt');
 
 // internal dependencies
 const User = require('../models/User');
 
 async function createUser(req, res) {
-	const user = req.body;
-	const hashedPassword = await bcrypt.hash(user.password, 10);
-	user.password = hashedPassword;
+	const authHeader = req.headers.authorization;
+	const token = authHeader && authHeader.split(' ')[1];
 
-	const newUser = new User(user);
-	try {
-		const result = await newUser.save();
-		res.send(result);
-	} catch (err) {
-		res.status(500).json({
-			errors: {
-				common: {
-					msg: 'Unknown error occurred',
-				},
-			},
-		});
+	if (!token) {
+		// Handle the error
+		console.log('No token provided');
+		return;
 	}
+
+	// Get an instance of the Auth client
+	const auth = admin.auth();
+
+	auth.verifyIdToken(token)
+		.then((decodedToken) => {
+			const { name, picture, email, email_verified, uid } = decodedToken;
+
+			auth.setCustomUserClaims(uid, { role: 'student' }).then((res) =>
+				auth
+					.getUser(uid)
+					.then((user) => {
+						console.log(uid);
+						console.log(user);
+					})
+					.catch((err) => console.log(err))
+			);
+		})
+		.catch((err) => {
+			console.log(err);
+		});
 }
 
 async function removeUser(req, res) {
