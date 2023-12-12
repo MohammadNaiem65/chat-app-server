@@ -1,6 +1,5 @@
 // external dependencies
 const admin = require('firebase-admin');
-const bcrypt = require('bcrypt');
 
 // internal dependencies
 const User = require('../models/User');
@@ -22,15 +21,21 @@ async function createUser(req, res) {
 		.then((decodedToken) => {
 			const { name, picture, email, email_verified, uid } = decodedToken;
 
-			auth.setCustomUserClaims(uid, { role: 'student' }).then((res) =>
-				auth
-					.getUser(uid)
-					.then((user) => {
-						console.log(uid);
-						console.log(user);
-					})
-					.catch((err) => console.log(err))
-			);
+			auth.setCustomUserClaims(uid, { role: 'student' })
+				.then(() => {
+					const newUser = new User({
+						_id: uid,
+						name,
+						email,
+						email_verified,
+						avatar: picture,
+						role: 'student',
+					});
+
+					newUser.save();
+					console.log(newUser);
+				})
+				.catch((err) => console.log(err));
 		})
 		.catch((err) => {
 			console.log(err);
