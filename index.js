@@ -1,13 +1,22 @@
 // external imports
 const express = require('express');
 const mongoose = require('mongoose');
+const admin = require('firebase-admin');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 // internal imports
 const userHandler = require('./routeHandlers/userHandler');
+const loginHandler = require('./routeHandlers/loginHandler');
 const conversationHandler = require('./routeHandlers/conversationHandler');
 const messageHandler = require('./routeHandlers/messageHandler');
+
+// TODO: import firebase credentials
+const firebaseCredentials = require('./firebase-credentials.json');
+
+admin.initializeApp({
+	credential: admin.credential.cert(firebaseCredentials),
+});
 
 const app = express();
 
@@ -24,6 +33,7 @@ app.use(express.json());
 app.use(cookieParser(process.env.COOKIE_SECRET));
 
 app.use('/user', userHandler);
+app.use('/login', loginHandler);
 app.use('/conversation', conversationHandler);
 app.use('/message', messageHandler);
 
