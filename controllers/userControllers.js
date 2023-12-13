@@ -1,45 +1,77 @@
 // external dependencies
 const admin = require('firebase-admin');
+const jwt = require('jsonwebtoken');
 
 // internal dependencies
 const User = require('../models/User');
 
 async function createUser(req, res) {
 	const authHeader = req.headers.authorization;
-	const token = authHeader && authHeader.split(' ')[1];
+	const idToken = authHeader && authHeader.split(' ')[1];
 
-	if (!token) {
+	if (!idToken) {
 		// Handle the error
-		console.log('No token provided');
+		res.status(401);
 		return;
 	}
 
 	// Get an instance of the Auth client
 	const auth = admin.auth();
 
-	auth.verifyIdToken(token)
-		.then((decodedToken) => {
-			const { name, picture, email, email_verified, uid } = decodedToken;
+	// verify token
+	try {
+		const decodedToken = await auth.verifyIdToken(idToken);
+		const { name, picture, email, email_verified, uid } = decodedToken;
 
-			auth.setCustomUserClaims(uid, { role: 'student' })
-				.then(() => {
-					const newUser = new User({
-						_id: uid,
-						name,
-						email,
-						email_verified,
-						avatar: picture,
-						role: 'student',
-					});
+		// generate access token
+		const accessToken = jwt.sign(
+			{ email, role: 'student' },
+			process.env.ACCESS_TOKEN_SECRET,
+			{
+				expiresIn: '1h',
+			}
+		);
 
-					newUser.save();
-					console.log(newUser);
-				})
-				.catch((err) => console.log(err));
-		})
-		.catch((err) => {
-			console.log(err);
+		// generate refresh token
+		const refreshToken = jwt.sign(
+			{ email, role: 'student' },
+			process.env.REFRESH_TOKEN_SECRET,
+			{
+				expiresIn: '1d',
+			}
+		);
+
+		// save user to database
+		await User.init();
+		const newUser = await User.create({
+			name,
+			email,
+			email_verified,
+			avatar: picture,
+			role: 'student',
+			refreshToken,
 		});
+
+		// save role and _id to firebase account
+		await auth.setCustomUserClaims(uid, {
+			role: 'student',
+			_id: newUser._id,
+		});
+
+		res.cookie('jwt', refreshToken, {
+			httpOnly: true,
+			maxAge: 24 * 60 * 60 * 1000,
+			signed: true,
+		});
+		res.json({
+			msg: 'Login successful!',
+			accessToken,
+		});
+	} catch (error) {
+		if(error?.MongoServerError) {
+			console.log(error?.key);
+		}
+	}
 }
 
 async function removeUser(req, res) {
