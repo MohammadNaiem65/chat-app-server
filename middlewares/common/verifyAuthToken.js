@@ -5,7 +5,7 @@ async function verifyAuthToken(req, res, next) {
 	const token = authHeader && authHeader.split(' ')[1];
 
 	// send unauthorized status
-	if (!token) return res.sendStatus(403);
+	if (!token) return res.sendStatus(401);
 
 	// verify the token
 	jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
@@ -15,6 +15,8 @@ async function verifyAuthToken(req, res, next) {
 		// after successful verification
 		req.user = user;
 	});
+
+	next();
 }
 
 module.exports = verifyAuthToken;

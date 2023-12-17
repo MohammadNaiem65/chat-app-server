@@ -5,13 +5,14 @@ const jwt = require('jsonwebtoken');
 // internal dependencies
 const User = require('../models/User');
 
+// create a new user
 async function createUser(req, res) {
 	const authHeader = req.headers.authorization;
 	const idToken = authHeader && authHeader.split(' ')[1];
 
 	if (!idToken) {
 		// Handle the error
-		res.status(401);
+		res.status(403);
 		return;
 	}
 
@@ -23,7 +24,7 @@ async function createUser(req, res) {
 		const decodedToken = await auth.verifyIdToken(idToken);
 		const { name, picture, email, email_verified, uid } = decodedToken;
 
-		// generate access token
+		// * generate access token
 		const accessToken = jwt.sign(
 			{ email, role: 'student' },
 			process.env.ACCESS_TOKEN_SECRET,
@@ -32,7 +33,7 @@ async function createUser(req, res) {
 			}
 		);
 
-		// generate refresh token
+		// * generate refresh token
 		const refreshToken = jwt.sign(
 			{ email, role: 'student' },
 			process.env.REFRESH_TOKEN_SECRET,
@@ -41,7 +42,7 @@ async function createUser(req, res) {
 			}
 		);
 
-		// save user to database
+		// * save user to database
 		await User.init();
 		const newUser = await User.create({
 			name,
@@ -58,6 +59,7 @@ async function createUser(req, res) {
 			_id: newUser._id,
 		});
 
+		// * send refresh token securely along with access token
 		res.cookie('jwt', refreshToken, {
 			httpOnly: true,
 			maxAge: 24 * 60 * 60 * 1000,
@@ -68,7 +70,7 @@ async function createUser(req, res) {
 			accessToken,
 		});
 	} catch (error) {
-		if(error?.MongoServerError) {
+		if (error?.MongoServerError) {
 			console.log(error?.key);
 		}
 	}
